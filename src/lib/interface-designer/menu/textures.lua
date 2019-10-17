@@ -1,3 +1,6 @@
+-- Maybe i could need to make use of this feature (get image width and height):
+-- https://sites.google.com/site/nullauahdark/getimagewidthheight
+
 --[[===============================================================
 ===================================================================]]
 local I = require 'mimgui'

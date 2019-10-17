@@ -75,22 +75,27 @@ module.renderAllTextures = function (name)
 	module.textures_size_multipliers = {}
 	module.textures_pointers = {}
 	
-	local i, tex = nil, saved_data[name].textures
-	print(encodeJson(tex))
-	for i = 1, #tex do
-		module.textures_pointers[i] = renderLoadTextureFromFile(tex[i].path)
-		module.textures_size_multipliers[i] = 1
+	if saved_data[name].textures then
+		local i, tex = nil, saved_data[name].textures
+		for i = 1, #tex do
+			module.textures_pointers[i] = renderLoadTextureFromFile(tex[i].path)
+			module.textures_size_multipliers[i] = 1
+		end
 	end
 end
 
 local DrawTextures = function ()
 	local rgbaToUint = require("interface-designer.utils").rgbaToUint
 	local draw = 0
-	for i = 1, #module.textures do
-		local t, texture, s = module.textures[i], module.textures_pointers[i], module.textures_size_multipliers[i]
-		if not t.hidden_flag then
-			renderDrawTexture(texture, t.pos[1], t.pos[2], t.size[1]*s, t.size[2]*s, t.rotation,
-				rgbaToUint(color(t.color[1]), color(t.color[2]), color(t.color[3]), color(t.color[4])))
+	if module.textures then
+		if #module.textures > 0 then
+			for i = 1, #module.textures do
+				local t, texture, s = module.textures[i], module.textures_pointers[i], module.textures_size_multipliers[i]
+				if not t.hidden_flag then
+					renderDrawTexture(texture, t.pos[1], t.pos[2], t.size[1]*s, t.size[2]*s, t.rotation,
+						rgbaToUint(color(t.color[1]), color(t.color[2]), color(t.color[3]), color(t.color[4])))
+				end
+			end
 		end
 	end
 end

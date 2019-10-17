@@ -32,6 +32,8 @@ module.iDesgn = {
 	
 	saved_data = {},
 	SAVEFILE = "moonloader/lib/interface-designer/interface-designer.SAV",
+	current_file = "",
+	data_created = false,
 }
 
 module.SaveData = function (title)
@@ -42,14 +44,17 @@ module.SaveData = function (title)
 	iDesgn.saved_data[title].boxes = elements.boxes
 	
 	-- Applying size multipliers to textures size before save
-	local i
-	for i = 1, #elements.textures do
-		local t, s = elements.textures[i], elements.textures_size_multipliers[i]
-		--local sizeX, sizeY, sMult = t.size[1], t.size[2], s
-		t.size = { t.size[1]*s, t.size[2]*s }
-		elements.textures_size_multipliers[i] = 1
+	if elements.textures then
+		local i
+		for i = 1, #elements.textures do
+			local t, s = elements.textures[i], elements.textures_size_multipliers[i]
+			t.size = { t.size[1]*s, t.size[2]*s }
+			elements.textures_size_multipliers[i] = 1
+		end
+		iDesgn.saved_data[title].textures = elements.textures
+	else
+		iDesgn.saved_data[title].textures = {}
 	end
-	iDesgn.saved_data[title].textures = elements.textures
 	
 	local file = io.open(iDesgn.SAVEFILE,'w')
     if file then
@@ -60,6 +65,9 @@ module.SaveData = function (title)
 		}))
         io.close(file)
     end
+	
+	iDesgn.current_file = title
+	iDesgn.data_created = true
 end
 
 module.LoadData = function (title)
@@ -86,6 +94,9 @@ module.LoadData = function (title)
 			elements.createAllDynamicGxtEntries(title)
 			elements.releaseAllTextures()
 			elements.renderAllTextures(title)
+			
+			iDesgn.current_file = title
+			iDesgn.data_created = true
 			return true
 		else
 			elements.texts = {}
@@ -138,6 +149,17 @@ module.RefreshDirectoryTree = function ()
 		--file:write(encodeJson(tree))
 		io.close(file)
 	end
+end
+
+module.Timer = {}
+module.Timer.prevTime = 0
+module.Timer.reset = function ()
+	module.Timer.prevTime = I.GetTime()
+end
+module.Timer.get = function ()
+	local curr = I.GetTime()
+	local prev = module.Timer.prevTime
+	return math.floor((curr - prev)*1000)
 end
 
 return module

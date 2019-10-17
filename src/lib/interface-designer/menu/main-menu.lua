@@ -26,15 +26,56 @@ end
 
 local log_file_raw = new.char[1024 * 10000]( ReadLogFile() )
 
+local initializeCurrentFile = function ()
+	if not iDesgn.data_created then
+		iDesgn.current_file = ""
+		iDesgn.data_created = true
+	end
+end
+
+local showCurrentFileLabel = function ()
+	if iDesgn.data_created and not(iDesgn.current_file == "") then
+		return iDesgn.current_file .. " - "
+	elseif iDesgn.data_created then
+		return "No name - "
+	else
+		return ""
+	end
+end
+
 --[[===============================================================
-===================================================================]]
+===================================================================]]	
+local file_saved = false
+
 module.Show = function ()
-	I.Begin("InterfaceDesigner", iDesgn.main_menu_flag, I.WindowFlags.MenuBar)
+	if not iDesgn.data_created and elements.atLeastOneElementExists() then
+		print("reinitializing file data")
+		iDesgn.current_file = ""
+		iDesgn.data_created = true
+	end
+	
+	-- Autosave function
+	if iDesgn.data_created and elements.atLeastOneElementExists() then
+		if math.floor(I.GetTime()) % 10 == 0 then -- Each 10 seconds!
+			if not file_saved then
+				require("interface-designer.globals").LoadData()
+				local savetitle = (iDesgn.current_file == "") and "AUTOSAVE" or iDesgn.current_file
+				require("interface-designer.globals").SaveData(savetitle)
+				--printHelpString("Autosaved in " .. savetitle .. "!")
+				file_saved = true
+			end
+		elseif file_saved then
+			file_saved = false
+		end
+	end
+	
+	--local flag = ( ( ( math.floor(I.GetTime()*4) % 2 ) * (((math.floor(I.GetTime()) % 1000)<=1) and 1 or 0) ) ~= 0 ) and true or false
+	I.Begin(showCurrentFileLabel() .. "InterfaceDesigner###main", iDesgn.main_menu_flag, I.WindowFlags.MenuBar)
 	
 	if I.BeginMenuBar() then
 		if I.BeginMenu("Menu") then
-			if I.MenuItemBool("New", nil, false, elements.atLeastOneElementExists())		then iDesgn.new_interface_modal		= new.bool(true) end
-			if I.MenuItemBool("Open", "Ctrl+O")												then iDesgn.open_interface_modal	= new.bool(true) end
+			if I.MenuItemBool("New", nil, false, iDesgn.data_created)		then iDesgn.new_interface_modal		= new.bool(true) end
+			if I.MenuItemBool("Open", "Ctrl+O")								then iDesgn.open_interface_modal	= new.bool(true) end
 			if I.BeginMenu("Open Recent") then
 				if I.MenuItemBool("fish_hat.c") then end
 				if I.MenuItemBool("fish_hat.inl") then end
@@ -47,11 +88,11 @@ module.Show = function ()
 				I.EndMenu()
 			end
 			I.Separator()
-			if I.MenuItemBool("Save", "Ctrl+S", false, false)	then iDesgn.save_interface_modal	= new.bool(true) end
-			if I.MenuItemBool("Save As..", nil, false, elements.atLeastOneElementExists())	then iDesgn.save_interface_as_modal	= new.bool(true) end
+			if I.MenuItemBool("Save", "Ctrl+S", false, false)				then iDesgn.save_interface_modal	= new.bool(true) end
+			if I.MenuItemBool("Save As..", nil, false, iDesgn.data_created)	then iDesgn.save_interface_as_modal	= new.bool(true) end
 			I.Separator()
 			if I.BeginMenu("Export as...") then
-				if I.MenuItemBool("Plain data", nil, false, elements.atLeastOneElementExists()) then end
+				if I.MenuItemBool("Plain data", nil, false, iDesgn.data_created) then end
 				I.TextDisabled("CLEO/SCM")
 				I.TextDisabled("Lua")
 				I.TextDisabled("C++")
@@ -110,10 +151,14 @@ module.Show = function ()
 	-- Show Boxes
 	Boxes.Show()
 	
-	if #elements.textures > 0 and (#elements.boxes > 0 or #elements.texts) then		I.Separator()		end
-	
 	-- Show Textures
-	Textures.Show()
+	if elements.textures then
+		if #elements.textures > 0 and (#elements.boxes > 0 or #elements.texts) then
+			I.Separator()
+		end
+	
+		Textures.Show()
+	end
 	
 	I.End()
 	
@@ -139,6 +184,8 @@ module.Show = function ()
 		I.Text("You are starting a new interface.\nAll changes unsaved will be lost\nContinue?\n\n")
 		I.Separator()
 		if I.Button("OK", I.ImVec2(120, 0)) then
+			iDesgn.current_file = ""
+			iDesgn.data_created = false
 			elements.Reset()
 			I.CloseCurrentPopup()
 		end
