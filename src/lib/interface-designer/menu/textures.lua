@@ -234,7 +234,7 @@ module.Show = function ()
 		size_mult[0] = elements.textures_size_multipliers[i]
 		local hidden_text = t_ptr.show_flag[0] and "" or " [Hidden]"
 		
-		if I.CollapsingHeader("Texture "..i..hidden_text) then
+		if I.CollapsingHeader("Texture "..i..hidden_text..": ".."'"..filename.."'") then
 			I.Text("Texture "..i..": "..filename)
 			I.SameLine()
 			if I.SmallButton("Change##texture"..i) then

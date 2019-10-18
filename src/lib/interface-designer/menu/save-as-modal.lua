@@ -98,9 +98,11 @@ module.SaveAs_Modal = function ()
 		local i
 		if #save_list > 0 then
 			for i = 1, #save_list do
-				if I.Selectable(save_list[i], save_selected_slot == i) then
-					save_selected_slot = i
-					savetitle = new.char[100]( save_list[i] )
+				if save_list[i] ~= "AUTOSAVE" then
+					if I.Selectable(save_list[i], save_selected_slot == i) then
+						save_selected_slot = i
+						savetitle = new.char[100]( save_list[i] )
+					end
 				end
 			end
 		else
@@ -116,6 +118,9 @@ module.SaveAs_Modal = function ()
 		if I.Button("Save") then
 			if ffi.string(savetitle) == "" then
 				error_msg = "Error: You can't leave name field empty!"
+				I.OpenPopup("Error")
+			elseif ffi.string(savetitle) == "AUTOSAVE" then
+				error_msg = "Error: You can't choose 'AUTOSAVE' as name. Is reserved.\nChoose another one!"
 				I.OpenPopup("Error")
 			else
 				if iDesgn.saved_data[ ffi.string(savetitle) ] ~= nil then

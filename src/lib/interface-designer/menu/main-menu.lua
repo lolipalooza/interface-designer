@@ -46,6 +46,8 @@ end
 --[[===============================================================
 ===================================================================]]	
 local file_saved = false
+local export_cleo_modal = false
+local export_raw = new.char[1024 * 10000]()
 
 module.Show = function ()
 	if not iDesgn.data_created and elements.atLeastOneElementExists() then
@@ -74,8 +76,8 @@ module.Show = function ()
 	
 	if I.BeginMenuBar() then
 		if I.BeginMenu("Menu") then
-			if I.MenuItemBool("New", nil, false, iDesgn.data_created)		then iDesgn.new_interface_modal		= new.bool(true) end
-			if I.MenuItemBool("Open", "Ctrl+O")								then iDesgn.open_interface_modal	= new.bool(true) end
+			if I.MenuItemBool("New", nil, false, iDesgn.data_created)	then iDesgn.new_interface_modal		= new.bool(true) end
+			if I.MenuItemBool("Open")									then iDesgn.open_interface_modal	= new.bool(true) end
 			if I.BeginMenu("Open Recent") then
 				if I.MenuItemBool("fish_hat.c") then end
 				if I.MenuItemBool("fish_hat.inl") then end
@@ -88,12 +90,19 @@ module.Show = function ()
 				I.EndMenu()
 			end
 			I.Separator()
-			if I.MenuItemBool("Save", "Ctrl+S", false, false)				then iDesgn.save_interface_modal	= new.bool(true) end
+			if I.MenuItemBool("Save", nil, false, iDesgn.data_created) then
+				if iDesgn.current_file == "" then -- If the current file is a new file
+					iDesgn.save_interface_as_modal	= new.bool(true) -- Open same modal as the "Save as..."
+				else -- Do a quick save on the current file
+					require("interface-designer.globals").LoadData()
+					require("interface-designer.globals").SaveData( iDesgn.current_file )
+				end
+			end
 			if I.MenuItemBool("Save As..", nil, false, iDesgn.data_created)	then iDesgn.save_interface_as_modal	= new.bool(true) end
 			I.Separator()
 			if I.BeginMenu("Export as...") then
 				if I.MenuItemBool("Plain data", nil, false, iDesgn.data_created) then end
-				I.TextDisabled("CLEO/SCM")
+				if I.MenuItemBool("CLEO/SCM", nil, false, iDesgn.data_created) then export_cleo_modal = true end
 				I.TextDisabled("Lua")
 				I.TextDisabled("C++")
 				I.Separator()
@@ -211,6 +220,25 @@ module.Show = function ()
 			I.Separator()
 			if I.Button("Close") then iDesgn.debug_window_flag[0] = false end
 		I.End()
+	end
+	
+	-- Export in CLEO/SCM format modal
+	if export_cleo_modal then
+		export_cleo_modal = false
+		export_raw = new.char[1024 * 10000]( require("interface-designer.exporting").CLEO_Generate(elements) )
+		I.OpenPopup("Export in CLEO/SCM format")
+	end
+	if I.BeginPopupModal("Export in CLEO/SCM format") then
+		I.Text("CLEO/SCM format preview:")
+		--I.SameLine()
+		--if I.SmallButton("Refresh log file") then log_file_raw = new.char[1024 * 10000]( ReadLogFile() ) end
+		I.InputTextMultiline("Log", export_raw, 1024 * 10000, I.ImVec2(980, 600))
+		I.Separator()
+		I.Text("Exporting in: moonloader/interface-designer/"..iDesgn.current_file..".txt")
+		if I.Button("Export", I.ImVec2(120, 0)) then I.CloseCurrentPopup() end
+		I.SameLine()
+		if I.Button("Cancel", I.ImVec2(120, 0)) then I.CloseCurrentPopup() end
+		I.EndPopup()
 	end
 end
 
